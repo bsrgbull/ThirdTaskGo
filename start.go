@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -17,7 +18,6 @@ func main() {
 	}
 
 	inputFilePath := os.Args[1]
-	outputFolderPath := os.Args[2]
 
 	data, err := ioutil.ReadFile(inputFilePath)
 
@@ -29,16 +29,14 @@ func main() {
 	var urlSlice []string
 
 	for _, newURL := range strings.Split(string(data), "\n") {
-		urlSlice = append(urlSlice, strings.TrimSpace(newURL)) //TrimSpace удаляет символы переноса строки
+		//TrimSpace удаляет символы переноса строки
+		urlSlice = append(urlSlice, strings.TrimSpace(newURL))
 	}
-
-	fmt.Println(inputFilePath)
-	fmt.Println(outputFolderPath)
-	fmt.Println(urlSlice[0])
 
 	chanel := make(chan string)
 
 	for _, url := range urlSlice {
+		//		fmt.Println(url)
 		go fetch(url, chanel)
 	}
 
@@ -48,18 +46,49 @@ func main() {
 }
 
 func fetch(url string, chanel chan<- string) {
-
+	//	fmt.Println("555")
 	responce, err := http.Get(url)
 	if err != nil {
 		chanel <- fmt.Sprint(err) // Отправка в канал chanel
 		return
 	}
-
-	b, err := ioutil.ReadAll(responce.Body)
+	//	fmt.Println("654")
+	page, err := ioutil.ReadAll(responce.Body)
 	responce.Body.Close() // Исключение утечки ресурсов
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "fetch: чтение %s: %v\n", url, err)
 	}
-	chanel <- fmt.Sprintf("%s", b)
+	//	fmt.Println("946")
 
+	re, err := regexp.Compile(`[[:punct:]]`)
+
+	if err != nil {
+		// Если произошла ошибка выводим ее в консоль
+		fmt.Println(err)
+	}
+	str := re.ReplaceAllString(url, "")
+	fmt.Println(str)
+
+	fmt.Println(os.Args[2] + "/" + str)
+	err = os.MkdirAll(os.Args[2]+"/"+str, 0644)
+	fmt.Println(err != nil)
+	if err != nil {
+		// Если произошла ошибка выводим ее в консоль
+		fmt.Println(err)
+	}
+
+	outputFolderPath := os.Args[2]
+	pathToNewFile := outputFolderPath + "/" + str + "/page.html"
+	fmt.Println(pathToNewFile)
+
+	err = ioutil.WriteFile(pathToNewFile, page, 0644)
+	fmt.Println(err != nil)
+
+	if err != nil {
+		// Если произошла ошибка выводим ее в консоль
+		fmt.Println(err)
+	}
+
+	chanel <- fmt.Sprintf("%s", err)
 }
