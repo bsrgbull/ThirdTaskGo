@@ -17,9 +17,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	inputFilePath := os.Args[1]
+	inputFilePath := os.Args[1] //Путь к файлу с адресами
 
-	data, err := ioutil.ReadFile(inputFilePath)
+	data, err := ioutil.ReadFile(inputFilePath) //data - байтовый срез подстрок из файла
 
 	if err != nil {
 		fmt.Println("Ошибка чтения из файла")
@@ -28,67 +28,65 @@ func main() {
 
 	var urlSlice []string
 
+	//Получаем из data срез URL-строк, переменная urlSlice
 	for _, newURL := range strings.Split(string(data), "\n") {
 		//TrimSpace удаляет символы переноса строки
 		urlSlice = append(urlSlice, strings.TrimSpace(newURL))
 	}
 
-	chanel := make(chan string)
-
 	for _, url := range urlSlice {
-		//		fmt.Println(url)
-		go fetch(url, chanel)
+		newPage := fetch(url) //получение html-cтраницы
+		if newPage == nil {
+			continue
+		}
+		write(url, newPage) //запись на диск
 	}
 
-	for range urlSlice {
-		fmt.Println(<-chanel)
-	}
 }
 
-func fetch(url string, chanel chan<- string) {
-	//	fmt.Println("555")
+func fetch(url string) []byte { //Эта функция делает Get-запрос по url
+	//Возвращает html страницу в виде []byte
 	responce, err := http.Get(url)
 	if err != nil {
-		chanel <- fmt.Sprint(err) // Отправка в канал chanel
-		return
+		return nil //Вернём nil в случае ошибки запроса
 	}
-	//	fmt.Println("654")
-	page, err := ioutil.ReadAll(responce.Body)
-	responce.Body.Close() // Исключение утечки ресурсов
+
+	page, err := ioutil.ReadAll(responce.Body) //преобразуем тело запроса в байтовый срез
+	responce.Body.Close()                      // Исключение утечки ресурсов
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "fetch: чтение %s: %v\n", url, err)
 	}
-	//	fmt.Println("946")
+
+	return page
+}
+
+func write(url string, page []byte) {
 
 	re, err := regexp.Compile(`[[:punct:]]`)
 
 	if err != nil {
 		// Если произошла ошибка выводим ее в консоль
 		fmt.Println(err)
-	}
-	str := re.ReplaceAllString(url, "")
-	fmt.Println(str)
+	} //удаляем знаки препинания из url
+	//при помощи regexp.Compile
+	resultFolder := re.ReplaceAllString(url, "") //и ReplaceAllStrings
 
-	fmt.Println(os.Args[2] + "/" + str)
-	err = os.MkdirAll(os.Args[2]+"/"+str, 0644)
-	fmt.Println(err != nil)
+	//Создание папки по URL
+	err = os.MkdirAll(os.Args[2]+"/"+
+		resultFolder, 0644)
 	if err != nil {
 		// Если произошла ошибка выводим ее в консоль
 		fmt.Println(err)
 	}
 
-	outputFolderPath := os.Args[2]
-	pathToNewFile := outputFolderPath + "/" + str + "/page.html"
-	fmt.Println(pathToNewFile)
+	outputFolderPath := os.Args[2]                                        //Папка результатов
+	pathToNewFile := outputFolderPath + "/" + resultFolder + "/page.html" //конечный адрес на диске
 
-	err = ioutil.WriteFile(pathToNewFile, page, 0644)
-	fmt.Println(err != nil)
+	err = ioutil.WriteFile(pathToNewFile, page, 0644) //запись
 
 	if err != nil {
 		// Если произошла ошибка выводим ее в консоль
 		fmt.Println(err)
 	}
-
-	chanel <- fmt.Sprintf("%s", err)
 }
