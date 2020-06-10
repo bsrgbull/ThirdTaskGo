@@ -1,3 +1,4 @@
-http//1
-http//2
-http//3
+https://www.google.com/
+https://www.yandex.ru/
+https://www.sarbc.ru/
+http://dsfa.asdf
