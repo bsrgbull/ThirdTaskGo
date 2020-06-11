@@ -56,6 +56,7 @@ func fetch(url string) []byte { //Эта функция делает Get-зап�
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "fetch: чтение %s: %v\n", url, err)
+		return nil
 	}
 
 	return page
@@ -76,8 +77,9 @@ func write(url string, page []byte) {
 	err = os.MkdirAll(os.Args[2]+"/"+
 		resultFolder, 0644)
 	if err != nil {
-		// Если произошла ошибка выводим ее в консоль
+		// Если произошла ошибка выводим ее в консоль и выходим из функции
 		fmt.Println(err)
+		return
 	}
 
 	outputFolderPath := os.Args[2]                                        //Папка результатов
@@ -90,3 +92,5 @@ func write(url string, page []byte) {
 		fmt.Println(err)
 	}
 }
+
+//sync.WaitGroup
