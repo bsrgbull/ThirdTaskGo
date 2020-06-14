@@ -34,8 +34,22 @@ func main() {
 		urlSlice = append(urlSlice, strings.TrimSpace(newURL))
 	}
 
+	ch := make(chan []byte)
+
 	for _, url := range urlSlice {
-		newPage := fetch(url) //получение html-cтраницы
+
+		if url == "" { //Пропускаем пустые строки
+			continue
+		}
+
+		go fetch(url, ch) //получение html-cтраницы
+	}
+
+	for _, url := range urlSlice {
+		if url == "" { //Пропускаем пустые строки
+			continue
+		}
+		newPage := <-ch
 		if newPage == nil {
 			continue
 		}
@@ -44,11 +58,13 @@ func main() {
 
 }
 
-func fetch(url string) []byte { //Эта функция делает Get-запрос по url
-	//Возвращает html страницу в виде []byte
+func fetch(url string, ch chan []byte) { //Эта функция делает Get-запрос по url
+	//Возвращает html страницу в виде []byte по каналу ch
 	responce, err := http.Get(url)
 	if err != nil {
-		return nil //Вернём nil в случае ошибки запроса
+		fmt.Println("Не удалось связаться с " + url)
+		fmt.Println(err)
+		ch <- nil //Вернём nil в случае ошибки запроса
 	}
 
 	page, err := ioutil.ReadAll(responce.Body) //преобразуем тело запроса в байтовый срез
@@ -56,10 +72,10 @@ func fetch(url string) []byte { //Эта функция делает Get-зап�
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "fetch: чтение %s: %v\n", url, err)
-		return nil
+		ch <- nil
 	}
 
-	return page
+	ch <- page
 }
 
 func write(url string, page []byte) {
@@ -92,5 +108,3 @@ func write(url string, page []byte) {
 		fmt.Println(err)
 	}
 }
-
-//sync.WaitGroup
