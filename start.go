@@ -7,9 +7,12 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 func main() {
+
+	start := time.Now()
 
 	if len(os.Args) < 3 {
 		fmt.Println("Ошибка. Неправильно заданы аргументы. " +
@@ -56,11 +59,16 @@ func main() {
 		write(url, newPage) //запись на диск
 	}
 
+	fmt.Printf("Общее время: %fs\n", time.Since(start).Seconds())
 }
 
 func fetch(url string, ch chan []byte) { //Эта функция делает Get-запрос по url
 	//Возвращает html страницу в виде []byte по каналу ch
+
+	start := time.Now()
+
 	responce, err := http.Get(url)
+
 	if err != nil {
 		fmt.Println("Не удалось связаться с " + url)
 		fmt.Println(err)
@@ -74,6 +82,8 @@ func fetch(url string, ch chan []byte) { //Эта функция делает Ge
 		fmt.Fprintf(os.Stderr, "fetch: чтение %s: %v\n", url, err)
 		ch <- nil
 	}
+	//Выводим время на выполнение запроса
+	fmt.Printf("%.2fs %s\n", time.Since(start).Seconds(), url)
 
 	ch <- page
 }
