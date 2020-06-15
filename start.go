@@ -62,8 +62,9 @@ func main() {
 	fmt.Printf("Общее время: %fs\n", time.Since(start).Seconds())
 }
 
-func fetch(url string, ch chan []byte) { //Эта функция делает Get-запрос по url
-	//Возвращает html страницу в виде []byte по каналу ch
+//Эта функция делает Get-запрос по url
+//Возвращает html страницу в виде []byte по каналу ch
+func fetch(url string, ch chan []byte) {
 
 	start := time.Now()
 
@@ -75,8 +76,8 @@ func fetch(url string, ch chan []byte) { //Эта функция делает Ge
 		ch <- nil //Вернём nil в случае ошибки запроса
 	}
 
-	page, err := ioutil.ReadAll(responce.Body) //преобразуем тело запроса в байтовый срез
-	responce.Body.Close()                      // Исключение утечки ресурсов
+	page, err := ioutil.ReadAll(responce.Body) //Преобразуем тело запроса в байтовый срез
+	responce.Body.Close()                      //Исключение утечки ресурсов
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "fetch: чтение %s: %v\n", url, err)
